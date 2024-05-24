@@ -1,0 +1,218 @@
+SELECT * FROM Customers;
+
+SELECT * FROM Customers WHERE CompanyName LIKE '%N';
+
+SELECT * FROM Customers WHERE City IN ('Berlin', 'London');
+
+SELECT * FROM Customers WHERE Country IN ('UK', 'USA');
+
+SELECT * FROM Products ORDER BY ProductName;
+
+SELECT * FROM Products WHERE ProductName LIKE 'A%';
+
+
+SELECT DISTINCT c.* FROM Customers c
+JOIN Orders o ON c.CustomerID = o.CustomerID;
+
+SELECT DISTINCT c.* FROM Customers c
+JOIN Orders o ON c.CustomerID = o.CustomerID
+JOIN OrderDetails od ON o.OrderID = od.OrderID
+JOIN Products p ON od.ProductID = p.ProductID
+WHERE c.City = 'London' AND p.ProductName = 'Chai';
+
+SELECT * FROM Customers
+WHERE CustomerID NOT IN (SELECT CustomerID FROM Orders);
+
+SELECT DISTINCT c.* FROM Customers c
+JOIN Orders o ON c.CustomerID = o.CustomerID
+JOIN OrderDetails od ON o.OrderID = od.OrderID
+JOIN Products p ON od.ProductID = p.ProductID
+WHERE p.ProductName = 'Tofu';
+
+
+SELECT * FROM Orders ORDER BY OrderDate LIMIT 1;
+
+SELECT o.OrderID, o.OrderDate, SUM(od.Quantity * od.UnitPrice) AS TotalCost
+FROM Orders o
+JOIN OrderDetails od ON o.OrderID = od.OrderID
+GROUP BY o.OrderID, o.OrderDate
+ORDER BY TotalCost DESC LIMIT 1;
+
+SELECT OrderID, AVG(Quantity) AS AvgQuantity
+FROM OrderDetails
+GROUP BY OrderID;
+
+SELECT OrderID, MIN(Quantity) AS MinQuantity, MAX(Quantity) AS MaxQuantity
+FROM OrderDetails
+GROUP BY OrderID;
+
+
+SELECT m.ManagerID, m.ManagerName, COUNT(e.EmployeeID) AS NumEmployees
+FROM Employees e
+JOIN Managers m ON e.ManagerID = m.ManagerID
+GROUP BY m.ManagerID, m.ManagerName;
+
+SELECT OrderID, SUM(Quantity) AS TotalQuantity
+FROM OrderDetails
+GROUP BY OrderID
+HAVING TotalQuantity > 300;
+
+SELECT * FROM Orders WHERE OrderDate >= '1996-12-31';
+
+
+SELECT * FROM Orders WHERE ShipCountry = 'Canada';
+
+SELECT o.OrderID, SUM(od.Quantity * od.UnitPrice) AS TotalCost
+FROM Orders o
+JOIN OrderDetails od ON o.OrderID = od.OrderID
+GROUP BY o.OrderID
+HAVING TotalCost > 200;
+
+SELECT ShipCountry, SUM(od.Quantity * od.UnitPrice) AS TotalSales
+FROM Orders o
+JOIN OrderDetails od ON o.OrderID = od.OrderID
+GROUP BY ShipCountry;  
+
+SELECT c.ContactName, COUNT(o.OrderID) AS NumOrders
+FROM Customers c
+JOIN Orders o ON c.CustomerID = o.CustomerID
+GROUP BY c.ContactName;
+
+
+SELECT c.ContactName
+FROM Customers c
+JOIN Orders o ON c.CustomerID = o.CustomerID
+GROUP BY c.ContactName
+HAVING COUNT(o.OrderID) > 3;
+
+SELECT DISTINCT p.ProductName
+FROM Products p
+JOIN OrderDetails od ON p.ProductID = od.ProductID
+JOIN Orders o ON od.OrderID = o.OrderID
+WHERE p.Discontinued = 1 AND o.OrderDate BETWEEN '1997-01-01' AND '1998-01-01';
+
+
+SELECT e.FirstName AS EmployeeFirstName, e.LastName AS EmployeeLastName,
+       s.FirstName AS SupervisorFirstName, s.LastName AS SupervisorLastName
+FROM Employees e
+JOIN Employees s ON e.SupervisorID = s.EmployeeID;
+
+
+
+SELECT e.EmployeeID, SUM(od.Quantity * od.UnitPrice) AS TotalSales
+FROM Employees e
+JOIN Orders o ON e.EmployeeID = o.EmployeeID
+JOIN OrderDetails od ON o.OrderID = od.OrderID
+GROUP BY e.EmployeeID;
+
+
+
+SELECT * FROM Employees WHERE FirstName LIKE '%a%';
+
+
+SELECT m.ManagerID, m.ManagerName, COUNT(e.EmployeeID) AS NumEmployees
+FROM Employees e
+JOIN Managers m ON e.ManagerID = m.ManagerID
+GROUP BY m.ManagerID, m.ManagerName
+HAVING NumEmployees > 4;
+
+
+
+SELECT o.OrderID, p.ProductName
+FROM Orders o
+JOIN OrderDetails od ON o.OrderID = od.OrderID
+JOIN Products p ON od.ProductID = p.ProductID;
+
+
+
+WITH CustomerOrders AS (
+    SELECT CustomerID, COUNT(OrderID) AS NumOrders
+    FROM Orders
+    GROUP BY CustomerID
+)
+SELECT o.*
+FROM Orders o
+JOIN CustomerOrders co ON o.CustomerID = co.CustomerID
+WHERE co.NumOrders = (SELECT MAX(NumOrders) FROM CustomerOrders);
+
+
+SELECT o.*
+FROM Orders o
+JOIN Customers c ON o.CustomerID = c.CustomerID
+WHERE c.Fax IS NULL;
+
+
+
+SELECT DISTINCT o.ShipPostalCode
+FROM Orders o
+JOIN OrderDetails od ON o.OrderID = od.OrderID
+JOIN Products p ON od.ProductID = p.ProductID
+WHERE p.ProductName = 'Tofu';
+
+
+
+
+SELECT DISTINCT p.ProductName
+FROM Products p
+JOIN OrderDetails od ON p.ProductID = od.ProductID
+JOIN Orders o ON od.OrderID = o.OrderID
+WHERE o.ShipCountry = 'France';
+
+
+
+
+SELECT p.ProductName, c.CategoryName
+FROM Products p
+JOIN Categories c ON p.CategoryID = c.CategoryID
+JOIN Suppliers s ON p.SupplierID = s.SupplierID
+WHERE s.CompanyName = 'Specialty Biscuits, Ltd.';
+
+
+SELECT * FROM Products
+WHERE ProductID NOT IN (SELECT DISTINCT ProductID FROM OrderDetails);
+
+
+
+
+SELECT * FROM Products
+WHERE UnitsInStock < 10 AND UnitsOnOrder = 0;
+
+
+
+SELECT ShipCountry, SUM(od.Quantity * od.UnitPrice) AS TotalSales
+FROM Orders o
+JOIN OrderDetails od ON o.OrderID = od.OrderID
+GROUP BY ShipCountry
+ORDER BY TotalSales DESC
+LIMIT 10;
+
+
+
+SELECT e.EmployeeID, e.FirstName, e.LastName, COUNT(o.OrderID) AS NumOrders
+FROM Employees e
+JOIN Orders o ON e.EmployeeID = o.EmployeeID
+WHERE o.CustomerID BETWEEN 'A' AND 'AO'
+GROUP BY e.EmployeeID, e.FirstName, e.LastName;
+
+SELECT p.ProductName, SUM(od.Quantity * od.UnitPrice) AS TotalRevenue
+FROM Products p
+JOIN OrderDetails od ON p.ProductID = od.ProductID
+GROUP BY p.ProductName;
+
+
+SELECT SupplierID, COUNT(ProductID) AS NumberOfProducts
+FROM Products
+GROUP BY SupplierID;
+
+
+SELECT c.CustomerID, c.CompanyName, SUM(od.Quantity * od.UnitPrice) AS TotalBusiness
+FROM Customers c
+JOIN Orders o ON c.CustomerID = o.CustomerID
+JOIN OrderDetails od ON o.OrderID = od.OrderID
+GROUP BY c.CustomerID, c.CompanyName
+ORDER BY TotalBusiness DESC
+LIMIT 10;
+
+
+SELECT SUM(od.Quantity * od.UnitPrice) AS TotalRevenue
+FROM OrderDetails od;
