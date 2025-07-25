@@ -1,0 +1,391 @@
+CREATE TABLE Tasks (
+    Task_ID INT NOT NULL,
+    Project_ID INT NOT NULL,
+    Start_Date DATE,
+    End_Date DATE,
+    PRIMARY KEY (Task_ID, Project_ID)
+);
+WITH TaskDurations AS (
+    SELECT
+        Task_ID,
+        Project_ID,
+        Start_Date,
+        End_Date,
+        DATEDIFF(DAY, Start_Date, End_Date) AS Duration
+    FROM Tasks
+    WHERE Start_Date IS NOT NULL AND End_Date IS NOT NULL
+)
+SELECT
+    Project_ID,
+    MIN(Start_Date) AS Start_Date,
+    MAX(End_Date) AS End_Date
+FROM TaskDurations
+GROUP BY Project_ID, Duration
+ORDER BY Project_ID ASC, Start_Date DESC;
+
+SELECT
+    s.id,
+    s.name,
+    p.salary,
+    f.friend_id,
+    p2.salary AS friend_salary
+FROM
+    students s
+INNER JOIN
+    packages p ON s.id = p.id
+LEFT JOIN
+    friends f ON f.id = s.id
+LEFT JOIN
+    packages p2 ON f.friend_id = p2.id
+WHERE
+    p.salary < p2.salary
+ORDER BY
+    s.id;
+
+	SELECT
+    A.X,
+    B.Y
+FROM
+    Pairs A
+JOIN
+    Pairs B ON A.X = B.Y AND A.Y = B.X
+WHERE
+    A.X < B.Y
+ORDER BY
+    A.X;
+
+SELECT
+    A.X,
+    B.Y
+FROM
+    Pairs A
+JOIN
+    Pairs B ON A.X = B.Y AND A.Y = B.X
+WHERE
+    A.X < B.Y
+ORDER BY
+    A.X;
+
+	SELECT *
+FROM hacker;
+SELECT college 
+FROM hacker;
+SELECT college1, college2
+FROM hacker;
+SELECT college1, college2
+FROM hacker
+WHERE NumericColumn > 100;
+SELECT college1, college2
+FROM hacker
+WHERE college1 = 'SomeValue';
+
+
+SELECT challenge_id
+FROM Submission_Stats
+WHERE total_accepted_submissions > total_submissions;
+
+
+SELECT challenge_id
+FROM Submission_Stats
+WHERE total_accepted_submissions > total_submissions;
+
+
+
+WITH SubmissionDates AS (
+    SELECT DISTINCT
+        s.hacker_id,
+        DATE_TRUNC('day', s.submission_date) AS submission_day
+    FROM Submissions s
+    WHERE s.submission_date BETWEEN '2016-03-01' AND '2016-03-07'
+)
+SELECT
+    sd.submission_day,
+    COUNT(DISTINCT sd.hacker_id) AS unique_hackers
+FROM SubmissionDates sd
+WHERE EXISTS (
+    SELECT 1
+    FROM Submissions s2
+    WHERE s2.hacker_id = sd.hacker_id
+      AND s2.submission_date = sd.submission_day
+      AND s2.submission_time >= '00:00:00'
+      AND s2.submission_time <= '11:59:59'
+)
+GROUP BY sd.submission_day
+ORDER BY sd.submission_day;
+
+
+SELECT *
+FROM STATION;
+SELECT CITY
+FROM STATION;
+SELECT CITY, STATE
+FROM STATION;
+SELECT *
+FROM STATION
+WHERE LAT_N > 137.2345;
+SELECT *
+FROM STATION
+WHERE LAT_N < 137.2345
+  AND (CITY LIKE 'a%' OR CITY LIKE 'b%');
+SELECT *
+FROM STATION
+ORDER BY CITY;
+
+
+
+CREATE TABLE OCCUPATIONS (
+    Name VARCHAR(255),
+    Occupation VARCHAR(255)
+);
+INSERT INTO OCCUPATIONS (Name, Occupation)
+VALUES
+    ('Rose', 'Doctor'),
+    ('Angela', 'Professor'),
+    ('Frank', 'Singer'),
+    ('Patrick', 'Actor'),
+    ('Lisa', 'Doctor'),
+    ('Kimberly', 'Professor'),
+    ('Bonnie', 'Singer'),
+    ('Michael', 'Actor');
+
+
+
+SET @r1 = 0, @r2 = 0, @r3 = 0, @r4 = 0;
+SELECT
+    MIN(CASE WHEN Occupation = 'Doctor' THEN (@r1 := @r1 + 1)
+             WHEN Occupation = 'Professor' THEN (@r2 := @r2 + 1)
+             WHEN Occupation = 'Singer' THEN (@r3 := @r3 + 1)
+             WHEN Occupation = 'Actor' THEN (@r4 := @r4 + 1)
+        END) AS RowNumber,
+    MIN(Doctor) AS Doctor,
+    MIN(Professor) AS Professor,
+    MIN(Singer) AS Singer,
+    MIN(Actor) AS Actor
+FROM (
+    SELECT
+        Name,
+        CASE WHEN Occupation = 'Doctor' THEN Name END AS Doctor,
+        CASE WHEN Occupation = 'Professor' THEN Name END AS Professor,
+        CASE WHEN Occupation = 'Singer' THEN Name END AS Singer,
+        CASE WHEN Occupation = 'Actor' THEN Name END AS Actor
+    FROM OCCUPATIONS
+) AS T;
+
+
+
+SELECT Name
+FROM OCCUPATIONS
+WHERE Occupation NOT IN ('Doctor', 'Professor', 'Singer', 'Actor');
+
+
+
+CREATE TABLE OCCUPATIONS (
+    Company VARCHAR(255),
+    Founder VARCHAR(255)
+);
+INSERT INTO OCCUPATIONS (Company, Founder)
+VALUES
+    ('C_1', 'F_1'),
+    ('C_2', 'F_2'),
+    ('C_3', 'F_3'),
+    ('C_4', 'F_4'),
+    ('C_5', 'F_5'),
+    ('C_6', 'F_6');
+SELECT Company, Founder
+FROM OCCUPATIONS
+ORDER BY CAST(SUBSTRING(Company, 3) AS INT);
+SELECT DISTINCT Company
+FROM OCCUPATIONS
+WHERE Company LIKE 'C_%'
+ORDER BY Company;
+
+
+
+
+
+SELECT Company, Founder
+FROM OCCUPATIONS
+ORDER BY CAST(SUBSTRING(Company, 3) AS INT);
+SELECT DISTINCT Company
+FROM OCCUPATIONS
+WHERE Company LIKE 'C_%'
+ORDER BY Company;
+
+
+
+CREATE TABLE Employee (
+    employee_code VARCHAR(255),
+    name VARCHAR(255),
+    manager_code VARCHAR(255),
+    senior_manager_code VARCHAR(255),
+    company_code VARCHAR(255)
+);
+
+
+CREATE TABLE Company (
+    company_code VARCHAR(255),
+    founder VARCHAR(255)
+);
+
+CREATE TABLE Lead_Manager (
+    lead_manager_code VARCHAR(255),
+    company_code VARCHAR(255)
+);
+-- Employee Table
+INSERT INTO Employee (employee_code, name, manager_code, senior_manager_code, company_code)
+VALUES
+    ('E1', 'Monika', 'LM1', 'SM1', 'C1'),
+    ('E2', 'Samantha', 'LM2', 'SM2', 'C2');
+
+-- Company Table
+INSERT INTO Company (company_code, founder)
+VALUES
+    ('C1', 'Monika'),
+    ('C2', 'Samantha');
+
+-- Lead_Manager Table
+INSERT INTO Lead_Manager (lead_manager_code, company_code)
+VALUES
+    ('LM1', 'C1'),
+    ('LM2', 'C2');
+SELECT company_code, founder
+FROM Company
+ORDER BY CAST(SUBSTRING(company_code, 2) AS INT);
+SELECT DISTINCT company_code
+FROM Lead_Manager
+WHERE company_code LIKE 'C%'
+ORDER BY company_code;
+
+
+
+
+
+CREATE TABLE Employee (
+    employee_code VARCHAR(255),
+    name VARCHAR(255),
+    manager_code VARCHAR(255),
+    senior_manager_code VARCHAR(255),
+    company_code VARCHAR(255)
+);
+CREATE TABLE Company (
+    company_code VARCHAR(255),
+    founder VARCHAR(255)
+);
+CREATE TABLE Lead_Manager (
+    lead_manager_code VARCHAR(255),
+    company_code VARCHAR(255)
+);
+-- Employee Table
+INSERT INTO Employee (employee_code, name, manager_code, senior_manager_code, company_code)
+VALUES
+    ('E1', 'Monika', 'LM1', 'SM1', 'C1'),
+    ('E2', 'Samantha', 'LM2', 'SM2', 'C2');
+
+-- Company Table
+INSERT INTO Company (company_code, founder)
+VALUES
+    ('C1', 'Monika'),
+    ('C2', 'Samantha');
+
+-- Lead_Manager Table
+INSERT INTO Lead_Manager (lead_manager_code, company_code)
+VALUES
+    ('LM1', 'C1'),
+    ('LM2', 'C2');
+SELECT company_code, founder
+FROM Company
+ORDER BY CAST(SUBSTRING(company_code, 2) AS INT);
+SELECT DISTINCT company_code
+FROM Lead_Manager
+WHERE company_code LIKE 'C%'
+ORDER BY company_code;
+
+
+SELECT s.Name
+FROM Students s
+JOIN Friends f ON s.ID = f.ID
+JOIN Packages p1 ON f.Friend_ID = p1.ID
+JOIN Packages p2 ON s.ID = p2.ID
+WHERE p1.Salary > p2.Salary
+ORDER BY p1.Salary;
+
+
+SELECT
+    job_family,
+    country,
+    SUM(ctc) * 1.0 / SUM(CASE WHEN country = 'India' THEN ctc END) OVER (PARTITION BY job_family) AS ratio
+FROM t
+GROUP BY job_family, country;
+
+
+SELECT
+    Month,
+    SUM(Cost) AS TotalCost,
+    SUM(Revenue) AS TotalRevenue,
+    (SUM(Revenue) * 1.0) / NULLIF(SUM(Cost), 0) AS CostRevenueRatio
+FROM MonthlyData
+GROUP BY Month
+ORDER BY Month;
+
+
+WITH SubBandCounts AS (
+    SELECT
+        sub_band,
+        COUNT(*) AS headcount
+    FROM employees
+    GROUP BY sub_band
+)
+SELECT
+    sub_band,
+    headcount,
+    100.0 * headcount / SUM(headcount) OVER () AS percentage
+FROM SubBandCounts;
+
+
+
+SELECT DISTINCT TOP 5 Salary
+FROM Employees;
+
+
+SELECT DISTINCT e1.EmployeeID, e1.Name, e1.Salary
+FROM Employees e1, Employees e2
+WHERE e1.Salary >= e2.Salary
+GROUP BY e1.EmployeeID, e1.Name, e1.Salary
+HAVING COUNT(DISTINCT e2.Salary) <= 5;
+
+
+UPDATE YourTable
+SET Column1 = Column1 + Column2,
+    Column2 = Column1 - Column2,
+    Column1 = Column1 - Column2;
+-- Create a new login (replace 'YourLoginName' and 'YourPassword' with actual values)
+CREATE LOGIN YourLoginName WITH PASSWORD = 'YourPassword';
+
+-- Create a new user mapped to the login (replace 'YourDatabase' and 'YourSchema' with actual values)
+USE YourDatabase;
+CREATE USER YourUserName FOR LOGIN YourLoginName;
+
+-- Provide DB_OWNER permissions to the user
+ALTER ROLE db_owner ADD MEMBER YourUserName;
+
+
+
+
+SELECT
+    Month,
+    SUM(Cost * EmployeeCount) / SUM(EmployeeCount) AS WeightedAvgCost
+FROM YourTable
+GROUP BY Month;
+
+
+SELECT CEIL(AVG(Salary) - AVG(REPLACE(Salary, '0', '')))
+FROM EMPLOYEES;
+
+
+INSERT INTO newTable
+SELECT * FROM oldTable;
+INSERT INTO newTable (col1, col2, col3)
+SELECT column1, column2, column3
+FROM oldTable;
+INSERT INTO existingTable
+SELECT * FROM oldTable;
