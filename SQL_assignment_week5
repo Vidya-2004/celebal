@@ -1,0 +1,76 @@
+CREATE TABLE SubjectAllotments (
+    StudentID VARCHAR(50),
+    SubjectID VARCHAR(50),
+    Is_Valid BIT
+);
+
+-- Table for Subject Requests
+CREATE TABLE SubjectRequest (
+    StudentID VARCHAR(50),
+    SubjectID VARCHAR(50)
+);
+CREATE PROCEDURE ProcessSubjectRequest
+AS
+BEGIN
+    -- Declare a cursor to iterate over each request
+    DECLARE request_cursor CURSOR FOR
+    SELECT StudentID, SubjectID FROM SubjectRequest;
+
+    DECLARE @StudentID VARCHAR(50);
+    DECLARE @SubjectID VARCHAR(50);
+    DECLARE @CurrentSubjectID VARCHAR(50);
+
+    OPEN request_cursor;
+
+    FETCH NEXT FROM request_cursor INTO @StudentID, @SubjectID;
+
+    WHILE @@FETCH_STATUS = 0
+    BEGIN
+        -- Find the current valid subject for the student
+        SELECT @CurrentSubjectID = SubjectID 
+        FROM SubjectAllotments 
+        WHERE StudentID = @StudentID AND Is_Valid = 1;
+
+        -- Check if the requested subject is different from the current valid subject
+        IF @CurrentSubjectID IS NULL OR @CurrentSubjectID != @SubjectID
+        BEGIN
+            -- Invalidate the current valid subject if exists
+            IF @CurrentSubjectID IS NOT NULL
+            BEGIN
+                UPDATE SubjectAllotments
+                SET Is_Valid = 0
+                WHERE StudentID = @StudentID AND SubjectID = @CurrentSubjectID;
+            END
+
+            -- Insert the new subject as valid
+            INSERT INTO SubjectAllotments (StudentID, SubjectID, Is_Valid)
+            VALUES (@StudentID, @SubjectID, 1);
+        END
+
+        FETCH NEXT FROM request_cursor INTO @StudentID, @SubjectID;
+    END
+
+    CLOSE request_cursor;
+    DEALLOCATE request_cursor;
+
+    -- Clear the requests after processing
+    DELETE FROM SubjectRequest;
+END
+-- Insert sample data into SubjectAllotments
+INSERT INTO SubjectAllotments (StudentID, SubjectID, Is_Valid)
+VALUES
+('159103036', 'PO1491', 1),
+('159103036', 'PO1492', 0),
+('159103036', 'PO1493', 0),
+('159103036', 'PO1494', 0),
+('159103036', 'PO1495', 0);
+
+-- Insert sample data into SubjectRequest
+INSERT INTO SubjectRequest (StudentID, SubjectID)
+VALUES ('159103036', 'PO1496');
+
+-- Execute the stored procedure
+EXEC ProcessSubjectRequest;
+
+-- Check the updated SubjectAllotments table
+SELECT * FROM SubjectAllotments;
