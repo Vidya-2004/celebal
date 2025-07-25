@@ -1,0 +1,199 @@
+CREATE PROCEDURE InsertOrderDetails
+    @orderId INT,
+    @productId INT,
+    @unitprice DECIMAL(18, 2) = NULL,
+    @quantity INT,
+    @discount DECIMAL(4, 2) = 0.0
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @stockQuantity INT;
+    DECLARE @reorderLevel INT;
+    DECLARE @defaultUnitPrice DECIMAL(18, 2);
+
+    BEGIN TRY
+        SELECT @stockQuantity = QuantityInStock, @reorderLevel = ReorderLevel, @defaultUnitPrice = UnitPrice
+        FROM Product
+        WHERE ProductId = @productId;
+
+        IF @unitprice IS NULL
+        BEGIN
+            SET @unitprice = @defaultUnitPrice;
+        END
+
+        IF @stockQuantity < @quantity
+        BEGIN
+            PRINT 'Not enough stock to fulfill the order. Aborting operation.';
+            RETURN;
+        END
+
+        INSERT INTO OrderDetails (OrderId, ProductId, UnitPrice, Quantity, Discount)
+        VALUES (@orderId, @productId, @unitprice, @quantity, @discount);
+
+        IF @@ROWCOUNT = 0
+        BEGIN
+            PRINT 'Failed to place order. Please try again.';
+            RETURN;
+        END
+
+        UPDATE Product
+        SET QuantityInStock = QuantityInStock - @quantity
+        WHERE ProductId = @productId;
+
+        SELECT @stockQuantity = QuantityInStock
+        FROM Product
+        WHERE ProductId = @productId;
+
+        IF @stockQuantity < @reorderLevel
+        BEGIN
+            PRINT 'Warning: Quantity in stock of the product has dropped below its reorder level.';
+        END
+
+    END TRY
+    BEGIN CATCH
+        PRINT 'An error occurred while processing the order. Please try again.';
+    END CATCH
+END;
+go
+
+
+CREATE PROCEDURE updateOrderDetails
+    @OrderId INT,
+    @ProductId INT,
+    @UnitPrice DECIMAL(10, 2) = NULL,
+    @Quantity INT = NULL,
+    @Discount FLOAT = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @OriginalUnitPrice DECIMAL(10, 2);
+    DECLARE @OriginalQuantity INT;
+    DECLARE @OriginalDiscount FLOAT;
+
+    SELECT 
+        @OriginalUnitPrice = UnitPrice,
+        @OriginalQuantity = Quantity,
+        @OriginalDiscount = Discount
+    FROM OrderDetails
+    WHERE OrderId = @OrderId AND ProductId = @ProductId;
+
+    UPDATE OrderDetails
+    SET 
+        UnitPrice = ISNULL(@UnitPrice, @OriginalUnitPrice),
+        Quantity = ISNULL(@Quantity, @OriginalQuantity),
+        Discount = ISNULL(@Discount, @OriginalDiscount)
+    WHERE OrderId = @OrderId AND ProductId = @ProductId;
+
+    IF @Quantity IS NOT NULL
+    BEGIN
+        DECLARE @QuantityChange INT;
+        SET @QuantityChange = @Quantity - @OriginalQuantity;
+
+        UPDATE Products
+        SET UnitsInStock = UnitsInStock - @QuantityChange
+        WHERE ProductId = @ProductId;
+    END
+END;
+GO
+
+
+CREATE PROCEDURE getOrderDetails
+    @OrderId INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    CREATE TABLE #TempOrderDetails
+    (
+        OrderId INT,
+        ProductId INT,
+        UnitPrice DECIMAL(10, 2),
+        Quantity INT,
+        Discount FLOAT
+    );
+
+    INSERT INTO #TempOrderDetails
+    SELECT OrderId, ProductId, UnitPrice, Quantity, Discount
+    FROM OrderDetails
+    WHERE OrderId = @OrderId;
+
+    IF (SELECT COUNT(*) FROM #TempOrderDetails) = 0
+    BEGIN
+        PRINT 'The orderId ' + CAST(@OrderId AS VARCHAR) + ' does not exist';
+        RETURN 1;
+    END
+    ELSE
+    BEGIN
+        SELECT * FROM #TempOrderDetails;
+    END
+
+    DROP TABLE #TempOrderDetails;
+END;
+GO
+
+
+CREATE PROCEDURE deleteOrderDetails
+    @OrderId INT,
+    @ProductId INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF NOT EXISTS (SELECT 1 FROM OrderDetails WHERE OrderId = @OrderId)
+    BEGIN
+        PRINT 'Error: The OrderId ' + CAST(@OrderId AS VARCHAR) + ' does not exist.';
+        RETURN -1;
+    END
+
+    IF NOT EXISTS (SELECT 1 FROM OrderDetails WHERE OrderId = @OrderId AND ProductId = @ProductId)
+    BEGIN
+        PRINT 'Error: The ProductId ' + CAST(@ProductId AS VARCHAR) + ' does not exist for OrderId ' + CAST(@OrderId AS VARCHAR) + '.';
+        RETURN -1;
+    END
+
+    DELETE FROM OrderDetails
+    WHERE OrderId = @OrderId AND ProductId = @ProductId;
+
+    PRINT 'Order detail successfully deleted.';
+END;
+GO
+
+CREATE FUNCTION FormatDate(@InputDate DATETIME)
+RETURNS VARCHAR(10)
+AS
+BEGIN
+    RETURN CONVERT(VARCHAR(10), @InputDate, 101);
+END;
+GO
+
+
+CREATE FUNCTION FormatDateYYYYMMDD(@InputDate DATETIME)
+RETURNS VARCHAR(8)
+AS
+BEGIN
+    RETURN CONVERT(VARCHAR(8), @InputDate, 112);
+END;
+GO
+
+
+CREATE VIEW vwCustomerOrders AS
+SELECT 
+    c.CompanyName,
+    o.OrderID,
+    o.OrderDate,
+    od.ProductID,
+    p.ProductName,
+    od.UnitPrice,
+    od.Quantity,
+    od.Quantity * od.UnitPrice AS TotalPrice
+FROM 
+    Customers c
+INNER JOIN 
+    Orders o ON c.CustomerID = o.CustomerID
+INNER JOIN 
+    OrderDetails od ON o.OrderID = od.OrderID
+INNER JOIN 
+    Products p ON od.ProductID = p.ProductID;
+GO
